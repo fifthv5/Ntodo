@@ -1,0 +1,38 @@
+name: Compile Production Releases
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers automatically whenever you push a version tag like v1.3.0
+
+permissions:
+  contents: write # Grants permission to create releases and attach assets
+
+jobs:
+  build-and-ship:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Active Source Repository
+        uses: actions/checkout@v4
+
+      - name: Bootstrap Nim Execution Environment
+        uses: iffy/install-nim@v5
+        with:
+          version: 'stable'
+
+      - name: Build Optimized Linux Native Executable
+        run: |
+          nim c -d:release -o:todo todo.nim
+
+      - name: Package Executable Binary Container
+        run: |
+          tar -czvf todo-linux-amd64.tar.gz todo install.sh README.md
+
+      - name: Dispatch and Publish GitHub Release Package
+        uses: softprops/action-gh-release@v2
+        with:
+          files: todo-linux-amd64.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
