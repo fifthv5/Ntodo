@@ -1,7 +1,7 @@
 import std/[parseopt, strutils, os, terminal]
 
 const HelpMessage = """
-Nim Todo CLI Manager
+Nim Todo Manager
 Usage:
   todo [options] [task description]
 
@@ -13,7 +13,7 @@ Options:
   -d, --delete:NUM  Delete a task by its line number (e.g., -d:2)
 """
 
-const Version = "1.3.0"
+const Version = "0.0.3"
 
 # --- FIXED DYNAMIC DATA ROUTING ---
 # Automatically targets /home/will/.config/todo/tasks.txt across your system
@@ -83,7 +83,7 @@ proc main() =
         echo HelpMessage
         quit(0)
       of "v", "version":
-        styledWriteLine(stdout, fgBlue, "Todo CLI Version: ", fgWhite, Version)
+        styledWriteLine(stdout, fgBlue, "Ntodo Version: ", fgWhite, Version)
         quit(0)
       of "l", "list":
         actionSelected = true
