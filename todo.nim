@@ -26,6 +26,8 @@ discard existsOrCreateDir(configDir)
 
 proc printError(msg: string) =
   styledWriteLine(stderr, fgRed, styleBright, "✗ Error: ", resetStyle, msg)
+  echo " "
+  echo HelpMessage
 
 proc printSuccess(msg: string) =
   styledWriteLine(stdout, fgGreen, styleBright, "✔ ", resetStyle, msg)
