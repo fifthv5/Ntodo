@@ -26,7 +26,7 @@ sudo apt-get install nim
 ```
 
 
-### Clone the repo https://github.com
+### Then: 
 
 ```fish
 git clone https://github.com
