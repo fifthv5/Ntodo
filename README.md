@@ -24,6 +24,7 @@ sudo apt-get nim
 ```
 
 ## Usage
+
 ```fish 
 # Add an entry directly without string quotes
 todo build an amazing nixOS config loop
