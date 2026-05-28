@@ -9,25 +9,7 @@ A minimalist, high-contrast, color-coded task list script designed to integrate 
 - **Line Targeted Actions**: Drop or delete rows instantly using line coordinates.
 
 ## Quick Start Configuration
-
-## First Install Nim
-
-### Arch Linux:
-```fish
-
-sudo pacman -S nim 
-```
-
-### Ubuntu/Debian/Kali Linux:
-
-```fish
-
-sudo apt-get install nim
-```
-
-
-### Then: 
-
+ 
 ```fish
 git clone https://github.com
 cd Ntodo
