@@ -10,7 +10,20 @@ A minimalist, high-contrast, color-coded task list script designed to integrate 
 
 ## Quick Start Configuration
 
-### Install Nim with your favorite package manager(e.g., pacman, brew, etc)
+### Arch Linux
+```fish
+
+sudo pacman -S nim 
+```
+
+### Ubuntu/Debian/Kali Linux
+```fish
+
+sudo apt-get nim
+```
+```
+
+## Usage
 ```fish 
 # Add an entry directly without string quotes
 todo build an amazing nixOS config loop
