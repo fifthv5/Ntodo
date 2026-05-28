@@ -10,13 +10,15 @@ A minimalist, high-contrast, color-coded task list script designed to integrate 
 
 ## Quick Start Configuration
 
-### Arch Linux
+## First Install Nim
+
+### Arch Linux:
 ```fish
 
 sudo pacman -S nim 
 ```
 
-### Ubuntu/Debian/Kali Linux
+### Ubuntu/Debian/Kali Linux:
 
 ```fish
 
@@ -24,11 +26,25 @@ sudo apt-get install nim
 ```
 
 
-## Usage
+### Then:
+
+```fish
+git clone https://github.com/fifthv5/Ntodo.git
+cd Ntodo
+chmod +x install.sh 
+./install.sh
+```
+
+
+
+## Usage:
 
 ```fish 
 # Add an entry directly without string quotes
 todo build an amazing nixOS config loop
+
+# Shows the help menu 
+todo 
 
 # List all tasks
 todo --list
@@ -38,6 +54,22 @@ todo -d:1
 
 # Empty the file
 todo --clear
+
+# Show the version
+todo --version
 ```
 
+## Flags:
+```fish
+Nim Todo Manager
+Usage:
+  todo [options] [task description]
+
+Options:
+  -h, --help        Display this help message
+  -v, --version     Display the current version
+  -l, --list        List all current tasks
+  -c, --clear       Clear the entire todo list
+  -d, --delete:NUM  Delete a task by its line number (e.g., -d:2)
 ```
+
