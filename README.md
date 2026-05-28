@@ -37,6 +37,9 @@ todo -d:1
 # Empty the file
 todo --clear
 
+# Open the interactive tui interface
+todo --tui
+
 # Show the version
 todo --version
 ```
@@ -52,6 +55,7 @@ Options:
   -v, --version     Display the current version
   -l, --list        List all current tasks
   -c, --clear       Clear the entire todo list
+  -t, --tui         Open interactive TUI dashboard mode
   -d, --delete:NUM  Delete a task by its line number (e.g., -d:2)
 ```
 
