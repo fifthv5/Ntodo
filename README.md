@@ -26,10 +26,10 @@ sudo apt-get install nim
 ```
 
 
-### Then:
+### Clone the repo https://github.com
 
 ```fish
-git clone https://github.com/fifthv5/Ntodo.git
+git clone https://github.com
 cd Ntodo
 chmod +x install.sh 
 ./install.sh
