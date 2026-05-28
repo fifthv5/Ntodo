@@ -17,11 +17,12 @@ sudo pacman -S nim
 ```
 
 ### Ubuntu/Debian/Kali Linux
+
 ```fish
 
-sudo apt-get nim
+sudo apt-get install nim
 ```
-```
+
 
 ## Usage
 
@@ -37,4 +38,6 @@ todo -d:1
 
 # Empty the file
 todo --clear
+```
+
 ```
