@@ -8,9 +8,8 @@ printf "🚀 Initializing Todo CLI environment installation loop...\n"
 
 # 1. Dependency Validation Checks
 if ! command -v nim &>/dev/null; then
-  printf "✗ Error: The Nim compiler was not found on your system.\n"
-  printf "Please install it using: sudo pacman -S nim\n"
-  exit 1
+  curl https://nim-lang.org/choosenim/init.sh -sSf | sh
+  printf "Run Installation again to install todo...\n"
 fi
 
 # 2. Local Destination Verification
