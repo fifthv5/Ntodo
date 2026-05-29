@@ -11,7 +11,7 @@ A minimalist, high-contrast, color-coded task list script designed to integrate 
 ## Quick Start Configuration
  
 ```fish
-git clone https://github.com
+git clone https://github.com/fifthv5/Ntodo.git 
 cd Ntodo
 chmod +x install.sh 
 ./install.sh
@@ -23,7 +23,7 @@ chmod +x install.sh
 
 ```fish 
 # Add an entry directly without string quotes
-todo build an amazing nixOS config loop
+todo build a system fetch tool 
 
 # Shows the help menu 
 todo 
