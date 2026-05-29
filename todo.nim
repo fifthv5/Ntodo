@@ -1,7 +1,5 @@
 import std/[parseopt, strutils, os, terminal]
 
-let width = terminalWidth()
-
 const HelpMessage = """
 Nim Todo CLI Manager
 Usage:
@@ -16,7 +14,7 @@ Options:
   -d, --delete:NUM  Delete a task by its line number (e.g., -d:2)
 """
 
-const Version = "0.0.4"
+const Version = "1.7.0"
 const TodoFileDir = "todo"
 const TodoFileName = "tasks.txt"
 
@@ -31,7 +29,6 @@ proc printError(msg: string) =
 proc printSuccess(msg: string) =
   styledWriteLine(stdout, fgGreen, styleBright, "✔ ", resetStyle, msg)
 
-# Helper to read non-blank tasks securely into a raw array seq
 proc loadTasks(): seq[string] =
   result = @[]
   if fileExists(TodoFile):
@@ -39,7 +36,6 @@ proc loadTasks(): seq[string] =
       if line.strip() != "":
         result.add(line)
 
-# Helper to sync the live state array cleanly back to the text file
 proc saveTasks(tasks: seq[string]) =
   var linesOut: seq[string] = @[]
   for task in tasks:
@@ -60,20 +56,33 @@ proc listTasks() =
   for index, line in tasks:
     styledWriteLine(stdout, fgCyan, $(index + 1), " ", fgDefault, line)
 
-# --- FIX: POSIX Raw Mode Binding Imports for Linux/macOS ---
-# These low-level headers read keyboard ticks instantly without external libraries.
+# --- POSIX Raw Mode Binding Imports for Linux ---
 type Termios {.importc: "struct termios", header: "<termios.h>".} = object
 proc tcgetattr(fd: cint, termios_p: ptr Termios): cint {.importc, header: "<termios.h>".}
 proc tcsetattr(fd: cint, optional_actions: cint, termios_p: ptr Termios): cint {.importc, header: "<termios.h>".}
 proc cfmakeraw(termios_p: ptr Termios) {.importc, header: "<termios.h>".}
-proc runTui() =
-  let tasksRaw = loadTasks()
-  if tasksRaw.len == 0:
-    write(stdout, "\e[33mNo tasks found to navigate in interactive mode!\e[39m\r\n")
-    quit(0)
 
-  var tasks = tasksRaw
+# Helper to find original indices when mutating filtered lists
+proc syncFilteredChanges(allTasks: var seq[string], filteredTasks: seq[string], searchQuery: string) =
+  if searchQuery == "":
+    allTasks = filteredTasks
+    return
+  var updatedAll: seq[string] = @[]
+  var filterIdx = 0
+  for task in allTasks:
+    let displayLine = task.replace("- ", "")
+    if searchQuery.toLowerAscii() in displayLine.toLowerAscii():
+      if filterIdx < filteredTasks.len:
+        updatedAll.add(filteredTasks[filterIdx])
+        inc filterIdx
+    else:
+      updatedAll.add(task)
+  allTasks = updatedAll
+
+proc runTui() =
+  var allTasks = loadTasks()
   var selectedIndex = 0
+  var searchQuery = ""
   
   var origTermios, rawTermios: Termios
   discard tcgetattr(0, addr origTermios)
@@ -81,30 +90,48 @@ proc runTui() =
   cfmakeraw(addr rawTermios)
 
   hideCursor()
-  discard tcsetattr(0, 0, addr rawTermios)
 
   while true:
-    # Use explicit ANSI escape sequences to clear and home the screen safely in raw mode
+    discard tcsetattr(0, 0, addr rawTermios)
+    hideCursor()
+    
+    # 1. Filter live tasks based on the search query
+    var displayTasks: seq[string] = @[]
+    for task in allTasks:
+      let clean = task.replace("- ", "")
+      if searchQuery == "" or searchQuery.toLowerAscii() in clean.toLowerAscii():
+        displayTasks.add(task)
+        
+    if selectedIndex > displayTasks.high: 
+      selectedIndex = max(0, displayTasks.high)
+
     write(stdout, "\e[2J\e[H")
+    stdout.write(" ".repeat((terminalWidth() - 28) div 2) & \e[1m\e[34m=== INTERACTIVE TODO TUI ===\e[22m\e[39m\r\n")
+    write(stdout, "\e[36mControls: [↑/↓] Move | [Space] Delete | [A] Add | [e] Edit | [/] Search | [q/Esc] Exit\e[39m\r\n")
+    
+    if searchQuery != "":
+      write(stdout, "\e[35mFilter active: \"" & searchQuery & "\"\e[39m\r\n\r\n")
+    else:
+      write(stdout, "\r\n")
 
-    # Explicitly append \r\n to keep lines starting cleanly at the left margin
-    stdout.write(" ".repeat((terminalWidth() - 28) div 2) & "\e[1m\e[34m=== INTERACTIVE TODO TUI ===\e[22m\e[39m\r\n")
-    write(stdout, "\e[36mControls: [↑/↓] or [j/k] Move | [Space] Delete | [q/Esc] Exit\e[39m\r\n\r\n")
-
-    for i, task in tasks:
-      let displayLine = task.replace("- ", "")
-      if i == selectedIndex:
-        # Highlighted line block using manual ANSI rows
-        write(stdout, "\e[30m\e[46m\e[1m > " & displayLine & " \e[0m\r\n")
+    if displayTasks.len == 0:
+      if searchQuery != "":
+        write(stdout, "   \e[33mNo tasks match your search query.\e[39m\r\n")
       else:
-        write(stdout, "   " & displayLine & "\r\n")
+        write(stdout, "   \e[33mNo tasks found! Press [A] to add one.\e[39m\r\n")
+    else:
+      for i, task in displayTasks:
+        let displayLine = task.replace("- ", "")
+        if i == selectedIndex:
+          write(stdout, "\e[30m\e[46m\e[1m > " & displayLine & " \e[0m\r\n")
+        else:
+          write(stdout, "   " & displayLine & "\r\n")
 
-    # Flush output buffer immediately to prevent rendering lag
     flushFile(stdout)
 
     let ch = getch()
     case ch.int
-    of 27:
+    of 27: # Escape key or sequence handlers
       let nextCh = getch()
       if nextCh.int == 91: 
         let arrow = getch()
@@ -112,32 +139,63 @@ proc runTui() =
         of 65: # Arrow Up
           if selectedIndex > 0: dec selectedIndex
         of 66: # Arrow Down
-          if selectedIndex < tasks.high: inc selectedIndex
+          if selectedIndex < displayTasks.high: inc selectedIndex
         else: discard
       else:
-        break 
-    of 106, 66: # 'j' key down
-      if selectedIndex < tasks.high: inc selectedIndex
-    of 107, 65: # 'k' key up
+        if searchQuery != "":
+          searchQuery = "" # Clear search first on Esc
+        else:
+          break 
+    of 106: # 'j'
+      if selectedIndex < displayTasks.high: inc selectedIndex
+    of 107: # 'k'
       if selectedIndex > 0: dec selectedIndex
-    of 32: # Spacebar deletes the highlighted task row
-      tasks.delete(selectedIndex)
-      saveTasks(tasks)
-      if tasks.len == 0: break
-      if selectedIndex > tasks.high: selectedIndex = tasks.high
-    of 113, 81: # 'q' or 'Q' exit signals
+    of 32: # Spacebar to delete
+      if displayTasks.len > 0:
+        displayTasks.delete(selectedIndex)
+        syncFilteredChanges(allTasks, displayTasks, searchQuery)
+        saveTasks(allTasks)
+    of 65: # 'A' to add task
+      discard tcsetattr(0, 0, addr origTermios)
+      showCursor()
+      write(stdout, "\r\n\e[32m[+] Enter new task description:\e[39m ")
+      flushFile(stdout)
+      let inputTask = readLine(stdin).strip()
+      if inputTask != "":
+        allTasks.add("- " & inputTask)
+        saveTasks(allTasks)
+        searchQuery = "" # Reset filter to show the new item
+        selectedIndex = allTasks.high 
+    of 101: # 'e' to edit task
+      if displayTasks.len > 0:
+        discard tcsetattr(0, 0, addr origTermios)
+        showCursor()
+        let currentText = displayTasks[selectedIndex].replace("- ", "")
+        write(stdout, "\r\n\e[33m[*] Editing task (Current: " & currentText & "):\e[39m\r\n")
+        write(stdout, "\e[32m[+] Enter updated description:\e[39m ")
+        flushFile(stdout)
+        let updatedTask = readLine(stdin).strip()
+        if updatedTask != "":
+          displayTasks[selectedIndex] = "- " & updatedTask
+          syncFilteredChanges(allTasks, displayTasks, searchQuery)
+          saveTasks(allTasks)
+    of 47: # '/' to search/filter tasks
+      discard tcsetattr(0, 0, addr origTermios)
+      showCursor()
+      write(stdout, "\r\n\e[35m[/] Enter search keyword (or blank to clear):\e[39m ")
+      flushFile(stdout)
+      searchQuery = readLine(stdin).strip()
+      selectedIndex = 0
+    of 113, 81: # 'q' / 'Q'
       break
     else:
       discard
 
-  # Restore standard terminal processing states cleanly
   discard tcsetattr(0, 0, addr origTermios)
   showCursor()
   write(stdout, "\e[2J\e[H")
   write(stdout, "\e[32m✔ Returned from Interactive dashboard session successfully.\e[39m\n")
   flushFile(stdout)
-
-
 
 proc main() =
   var args = initOptParser()
@@ -148,7 +206,6 @@ proc main() =
     args.next()
     case args.kind
     of cmdEnd: break
-    
     of cmdShortOption, cmdLongOption:
       case args.key
       of "h", "help":
@@ -191,7 +248,6 @@ proc main() =
       else:
         printError("Unknown option: -" & args.key)
         quit(1)
-
     of cmdArgument:
       textArguments.add(args.key.strip())
 
